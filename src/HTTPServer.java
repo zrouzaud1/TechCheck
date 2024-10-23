@@ -29,26 +29,17 @@ public class HTTPServer {
     static class MyHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            // Set CORS headers (for frontend and backend communication)
+            // Set CORS headers
             exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
             exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
 
             // Check if it's a GET request
             if ("GET".equals(exchange.getRequestMethod())) {
-                // Extract the query parameter from the URL (e.g., "/data?query=searchTerm")
+                // Extract the query parameter from the URL (e.g., "/data?query=productName")
                 String query = exchange.getRequestURI().getQuery();
-
-                if (query == null || !query.startsWith("query=")) {
-                    // Case 1: If no query parameter, send the simple test response
-                    String response = "Hello, this is your Java backend!";
-                    exchange.sendResponseHeaders(200, response.length());
-                    OutputStream os = exchange.getResponseBody();
-                    os.write(response.getBytes());
-                    os.close();
-                } else {
-                    // Case 2: If query parameter exists, extract the search term and search in the database
-                    String searchTerm = query.split("=")[1];
-                    List<String> results = performSearch(searchTerm);
+                if (query != null && query.startsWith("query=")) {
+                    String productName = query.split("=")[1];
+                    List<String> results = performSearchByProductName(productName);
 
                     // Format the results as JSON
                     String jsonResponse = formatResultsAsJson(results);
@@ -59,37 +50,46 @@ public class HTTPServer {
                     OutputStream os = exchange.getResponseBody();
                     os.write(jsonResponse.getBytes());
                     os.close();
+                } else {
+                    // Default response if no query
+                    String response = "Hello, this is your Java backend!";
+                    exchange.sendResponseHeaders(200, response.length());
+                    OutputStream os = exchange.getResponseBody();
+                    os.write(response.getBytes());
+                    os.close();
                 }
             }
         }
 
-        // Perform the database search and return results
-        private List<String> performSearch(String searchTerm) {
-            List<String> results = new ArrayList<>();
+        // Perform the database search by product name and return the reviews
+  // Perform the database search by product name and return the reviews
+private List<String> performSearchByProductName(String productName) {
+    List<String> results = new ArrayList<>();
 
-            // Database connection parameters (replace with your values)
-            String url = "jdbc:mysql://localhost:3306/project_1";
-            String username = "root";
-            String password = ""; //inset your database password here!
+    // Database connection parameters
+    String url = "jdbc:mysql://localhost:3306/project_1";
+    String username = "root";
+    String password = ""; //enter your database password here
 
-            String sql = "SELECT title FROM product WHERE title LIKE ?";
+    // SQL query to search reviews based on product name
+    String sql = "SELECT r.review FROM reviews r WHERE r.productName LIKE ?";
 
-            try (Connection conn = DriverManager.getConnection(url, username, password);
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+    try (Connection conn = DriverManager.getConnection(url, username, password);
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-                stmt.setString(1, "%" + searchTerm + "%"); // Wildcard search
-
-                ResultSet rs = stmt.executeQuery();
-                while (rs.next()) {
-                    results.add(rs.getString("title"));
-                }
-
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-
-            return results;
+        stmt.setString(1, "%" + productName + "%");  // Use product name in query with wildcard for partial matches
+        ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+            results.add(rs.getString("review"));  // Add review text to the results list
         }
+
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+
+    return results;
+}
+
 
         // Format results as a simple JSON array
         private String formatResultsAsJson(List<String> results) {

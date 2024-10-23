@@ -8,6 +8,39 @@ function fetchData() {
         })
         .catch(error => console.error('Error:', error));
 }
+// script.js
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Get elements after the DOM is fully loaded
+    const openSignupBtn = document.getElementById('openSignupBtn');
+    const signupPopup = document.getElementById('signupPopup');
+    const closeSignupBtn = document.querySelector('.signup-close-btn');
+
+    // Function to open popup on button click
+    openSignupBtn.addEventListener('click', function() {
+        signupPopup.style.display = 'flex';  // Show popup when button is clicked
+    });
+
+    // Function to close popup on close button click
+    closeSignupBtn.addEventListener('click', function() {
+        signupPopup.style.display = 'none';  // Hide popup when close button is clicked
+    });
+
+    // Close popup if user clicks outside of the popup content
+    window.addEventListener('click', function(event) {
+        if (event.target == signupPopup) {
+            signupPopup.style.display = 'none';  // Hide popup when clicking outside the content
+        }
+    });
+});
+
+function goHome() {
+    window.location.href = 'index.html';
+}
+
+function signUp() {
+    window.location.href = 'signup.html';
+}
 
 // Function to open the search pop-up
 function openSearch() {
@@ -26,27 +59,49 @@ function submitSearch() {
     // Store the search query in localStorage to use on the search results page
     localStorage.setItem('searchQuery', query);
 
-    // Navigate to the search.html page (you can later use this query on that page)
-    window.location.href = 'search.html';
-
-    // Fetch request for search results (optional, if you need results before navigating)
-    fetch(`http://localhost:8080/data?query=${query}`)  // Call with search query
+    // Fetch request for search results from the backend (search by product name)
+    fetch(`http://localhost:8080/data?query=${query}`)  // Call with product name
         .then(response => response.json())
         .then(data => {
             console.log('Search results:', data);  // Log or handle the search results here
             document.getElementById('response').innerText = JSON.stringify(data);
         })
         .catch(error => console.error('Error:', error));
-}
 
+    // Navigate to the search.html page
+    window.location.href = 'search.html';
+}
 
 // Function to display the search query in search.html
 window.onload = function() {
-    if (window.location.pathname.endsWith('search.html')) {
-        var query = localStorage.getItem('searchQuery');
-        if (query) {
-            // Backend Pull for later goes here
-            console.log('Search query:', query);
-        }
+    var productName = localStorage.getItem('searchQuery');  // Retrieve product name
+    if (productName) {
+        // Make a fetch request to get search results based on the product name
+        fetch(`http://localhost:8080/data?query=${productName}`)
+            .then(response => response.json())
+            .then(data => {
+                console.log('Fetched search data:', data);
+                const searchResultsDiv = document.getElementById('searchResults');
+
+                // Check if we got any results
+                if (data.length > 0) {
+                    // Iterate through the results and display each review
+                    data.forEach(review => {
+                        const resultRow = document.createElement('div');
+                        resultRow.classList.add('result-row');
+                        resultRow.innerText = review;  // Each review is displayed as a row
+                        searchResultsDiv.appendChild(resultRow);
+                    });
+                } else {
+                    // If no results are found, display a message
+                    searchResultsDiv.innerText = "No reviews found for this product.";
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching search results:', error);
+                document.getElementById('searchResults').innerText = "Error fetching search results.";
+            });
+    } else {
+        document.getElementById('searchResults').innerText = "No search query provided.";
     }
 };
