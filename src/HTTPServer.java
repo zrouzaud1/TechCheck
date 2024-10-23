@@ -29,7 +29,7 @@ public class HTTPServer {
     static class MyHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            // Set CORS headers
+            // Set CORS headers (for frontend and backend communication)
             exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
             exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
 
@@ -37,20 +37,29 @@ public class HTTPServer {
             if ("GET".equals(exchange.getRequestMethod())) {
                 // Extract the query parameter from the URL (e.g., "/data?query=searchTerm")
                 String query = exchange.getRequestURI().getQuery();
-                String searchTerm = query != null && query.startsWith("query=") ? query.split("=")[1] : "";
 
-                // Call a method to perform the database search
-                List<String> results = performSearch(searchTerm);
+                if (query == null || !query.startsWith("query=")) {
+                    // Case 1: If no query parameter, send the simple test response
+                    String response = "Hello, this is your Java backend!";
+                    exchange.sendResponseHeaders(200, response.length());
+                    OutputStream os = exchange.getResponseBody();
+                    os.write(response.getBytes());
+                    os.close();
+                } else {
+                    // Case 2: If query parameter exists, extract the search term and search in the database
+                    String searchTerm = query.split("=")[1];
+                    List<String> results = performSearch(searchTerm);
 
-                // Format the response as JSON
-                String jsonResponse = formatResultsAsJson(results);
+                    // Format the results as JSON
+                    String jsonResponse = formatResultsAsJson(results);
 
-                // Send the response to the client
-                exchange.getResponseHeaders().add("Content-Type", "application/json");
-                exchange.sendResponseHeaders(200, jsonResponse.getBytes().length);
-                OutputStream os = exchange.getResponseBody();
-                os.write(jsonResponse.getBytes());
-                os.close();
+                    // Send the response to the client as JSON
+                    exchange.getResponseHeaders().add("Content-Type", "application/json");
+                    exchange.sendResponseHeaders(200, jsonResponse.getBytes().length);
+                    OutputStream os = exchange.getResponseBody();
+                    os.write(jsonResponse.getBytes());
+                    os.close();
+                }
             }
         }
 
@@ -59,11 +68,11 @@ public class HTTPServer {
             List<String> results = new ArrayList<>();
 
             // Database connection parameters (replace with your values)
-            String url = "jdbc:mysql://localhost:3306/MySQL80";
+            String url = "jdbc:mysql://localhost:3306/project_1";
             String username = "root";
-            String password = "Number1guppy1!667";
+            String password = ""; //inset your database password here!
 
-            String sql = "SELECT title FROM your_table WHERE title LIKE ?";
+            String sql = "SELECT title FROM product WHERE title LIKE ?";
 
             try (Connection conn = DriverManager.getConnection(url, username, password);
                  PreparedStatement stmt = conn.prepareStatement(sql)) {
