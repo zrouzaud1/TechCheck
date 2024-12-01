@@ -20,6 +20,7 @@ public class HTTPServer {
 
         // Set the handler for the "/data" endpoint
         server.createContext("/data", new MyHandler());
+        server.createContext("/addReview", new AddReviewHandler());
         server.setExecutor(null); // Use the default executor
         server.start();
         System.out.println("Server started on port 8080");
@@ -69,7 +70,7 @@ private List<String> performSearchByProductName(String productName) {
     // Database connection parameters
     String url = "jdbc:mysql://localhost:3306/project_1";
     String username = "root";
-    String password = ""; //enter your database password here
+    String password = "Number1guppy1!667"; //enter your database password here
 
     // SQL query to search reviews based on product name
     String sql = "SELECT r.review FROM reviews r WHERE r.productName LIKE ?";
@@ -90,7 +91,6 @@ private List<String> performSearchByProductName(String productName) {
     return results;
 }
 
-
         // Format results as a simple JSON array
         private String formatResultsAsJson(List<String> results) {
             StringBuilder json = new StringBuilder("[");
@@ -104,4 +104,97 @@ private List<String> performSearchByProductName(String productName) {
             return json.toString();
         }
     }
+
+    // Add this inside the HTTPServer class
+static class AddReviewHandler implements HttpHandler {
+    @Override
+    public void handle(HttpExchange exchange) throws IOException {
+        // Set CORS headers
+        exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+        exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
+
+        if ("POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+            // Parse request body
+            String requestBody = new String(exchange.getRequestBody().readAllBytes());
+            String[] params = requestBody.split("&");
+            String productName = params[0].split("=")[1];
+            String reviewContent = params[1].split("=")[1];
+
+            // Placeholder userId for 'guest_user'
+            int userId = 1;
+
+            // Ensure product exists
+            if (!productExists(productName)) {
+                addProduct(productName);
+            }
+
+            // Add review
+            boolean success = addReview(userId, productName, reviewContent);
+
+            // Send response
+            String response = success ? "Review added successfully!" : "Failed to add review.";
+            exchange.sendResponseHeaders(success ? 200 : 500, response.getBytes().length);
+            OutputStream os = exchange.getResponseBody();
+            os.write(response.getBytes());
+            os.close();
+        } else {
+            exchange.sendResponseHeaders(405, -1); // Method Not Allowed
+        }
+    }
+}
+
+// Check if a product exists in the database
+private static void addProduct(String productName) {
+    String url = "jdbc:mysql://localhost:3306/project_1";
+    String username = "root";
+    String password = "Number1guppy1!667"; // Replace with your actual password
+
+    String insertQuery = "INSERT INTO product (productName) VALUES (?)";
+    try (Connection conn = DriverManager.getConnection(url, username, password);
+         PreparedStatement stmt = conn.prepareStatement(insertQuery)) {
+        stmt.setString(1, productName);
+        stmt.executeUpdate();
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+}
+
+private static boolean productExists(String productName) {
+    String url = "jdbc:mysql://localhost:3306/project_1";
+    String username = "root";
+    String password = "Number1guppy1!667"; // Replace with your actual password
+
+    String query = "SELECT COUNT(*) FROM product WHERE productName = ?";
+    try (Connection conn = DriverManager.getConnection(url, username, password);
+         PreparedStatement stmt = conn.prepareStatement(query)) {
+        stmt.setString(1, productName);
+        ResultSet rs = stmt.executeQuery();
+        if (rs.next()) {
+            return rs.getInt(1) > 0; // Return true if count > 0
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+    return false;
+}
+
+private static boolean addReview(int userId, String productName, String reviewContent) {
+    String url = "jdbc:mysql://localhost:3306/project_1";
+    String username = "root";
+    String password = "Number1guppy1!667"; // Replace with your actual password
+
+    String insertQuery = "INSERT INTO reviews (userId, productName, review) VALUES (?, ?, ?)";
+    try (Connection conn = DriverManager.getConnection(url, username, password);
+         PreparedStatement stmt = conn.prepareStatement(insertQuery)) {
+        stmt.setInt(1, userId); // Use the placeholder userId for 'guest_user'
+        stmt.setString(2, productName);
+        stmt.setString(3, reviewContent);
+        int rowsAffected = stmt.executeUpdate();
+        return rowsAffected > 0;
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+    return false;
+}
+
 }

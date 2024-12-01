@@ -42,6 +42,10 @@ LOCK TABLES `product` WRITE;
 /*!40000 ALTER TABLE `product` DISABLE KEYS */;
 /*!40000 ALTER TABLE `product` ENABLE KEYS */;
 UNLOCK TABLES;
+
+INSERT INTO product (productId, productName) VALUES (1, 'Placeholder Product')
+ON DUPLICATE KEY UPDATE productName = 'Placeholder Product';
+
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;

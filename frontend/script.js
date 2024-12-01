@@ -42,6 +42,10 @@ function signUp() {
     window.location.href = 'signup.html';
 }
 
+function postReview() {
+    window.location.href = 'post_review.html'; // Redirect to the review submission page
+}
+
 // Function to open the search pop-up
 function openSearch() {
     document.getElementById('searchPopup').style.display = 'flex';
@@ -51,6 +55,31 @@ function openSearch() {
 function closeSearch() {
     document.getElementById('searchPopup').style.display = 'none';
 }
+
+//for POST requests on writing reviews
+document.getElementById('reviewForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+
+    const productName = document.getElementById('productName').value;
+    const review = document.getElementById('review').value;
+
+    fetch('http://localhost:8080/addReview', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `productName=${encodeURIComponent(productName)}&review=${encodeURIComponent(review)}`
+    })
+    .then(response => response.text())
+    .then(data => {
+        document.getElementById('reviewResponse').innerText = data;
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('reviewResponse').innerText = "Failed to submit review.";
+    });
+});
+
 
 // Function to submit the search query and navigate to the search results page
 function submitSearch() {

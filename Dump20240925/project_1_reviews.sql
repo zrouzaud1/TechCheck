@@ -41,6 +41,13 @@ CREATE TABLE `reviews` (
   CONSTRAINT `reviews_ibfk_2` FOREIGN KEY (`ProductId`) REFERENCES `product` (`productId`),
   CONSTRAINT `reviews_ibfk_3` FOREIGN KEY (`productName`) REFERENCES `product` (`productName`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+ALTER TABLE reviews MODIFY reviewId INT AUTO_INCREMENT;
+
+ALTER TABLE reviews MODIFY COLUMN ratings INT DEFAULT NULL;
+ALTER TABLE reviews MODIFY COLUMN brand VARCHAR(255) DEFAULT NULL;
+ALTER TABLE reviews MODIFY COLUMN type VARCHAR(255) DEFAULT NULL;
+
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
