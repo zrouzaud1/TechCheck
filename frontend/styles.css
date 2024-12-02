@@ -52,6 +52,13 @@ header {
     z-index: 1001;
 }
 
+.search-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+}
+
 .popup-content {
     background-color: white;
     padding: 20px;

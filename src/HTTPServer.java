@@ -63,33 +63,38 @@ public class HTTPServer {
         }
 
         // Perform the database search by product name and return the reviews
-  // Perform the database search by product name and return the reviews
-private List<String> performSearchByProductName(String productName) {
-    List<String> results = new ArrayList<>();
-
-    // Database connection parameters
-    String url = "jdbc:mysql://localhost:3306/project_1";
-    String username = "root";
-    String password = "Number1guppy1!667"; //enter your database password here
-
-    // SQL query to search reviews based on product name
-    String sql = "SELECT r.review FROM reviews r WHERE r.productName LIKE ?";
-
-    try (Connection conn = DriverManager.getConnection(url, username, password);
-         PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-        stmt.setString(1, "%" + productName + "%");  // Use product name in query with wildcard for partial matches
-        ResultSet rs = stmt.executeQuery();
-        while (rs.next()) {
-            results.add(rs.getString("review"));  // Add review text to the results list
+        private List<String> performSearchByProductName(String productName) {
+            List<String> results = new ArrayList<>();
+        
+            String url = "jdbc:mysql://localhost:3306/project_1";
+            String username = "root";
+            String password = "YourPasswordHere";
+        
+            String sql = "SELECT r.review " +
+                         "FROM reviews r " +
+                         "JOIN product p ON r.ProductId = p.productId " +
+                         "WHERE LOWER(p.productName) LIKE LOWER(?)";
+        
+            try (Connection conn = DriverManager.getConnection(url, username, password);
+                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+        
+                stmt.setString(1, "%" + productName + "%");
+                System.out.println("Executing query: " + sql + " with parameter: %" + productName + "%");
+        
+                ResultSet rs = stmt.executeQuery();
+                while (rs.next()) {
+                    String review = rs.getString("review");
+                    System.out.println("Fetched review: " + review); // Debugging log
+                    results.add(review);
+                }
+        
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        
+            System.out.println("Total reviews fetched: " + results.size());
+            return results;
         }
-
-    } catch (SQLException e) {
-        e.printStackTrace();
-    }
-
-    return results;
-}
 
         // Format results as a simple JSON array
         private String formatResultsAsJson(List<String> results) {

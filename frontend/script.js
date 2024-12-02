@@ -8,32 +8,37 @@ function fetchData() {
         })
         .catch(error => console.error('Error:', error));
 }
-// script.js
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Get elements after the DOM is fully loaded
+// Handle DOMContentLoaded
+document.addEventListener('DOMContentLoaded', function () {
     const openSignupBtn = document.getElementById('openSignupBtn');
     const signupPopup = document.getElementById('signupPopup');
     const closeSignupBtn = document.querySelector('.signup-close-btn');
 
-    // Function to open popup on button click
-    openSignupBtn.addEventListener('click', function() {
-        signupPopup.style.display = 'flex';  // Show popup when button is clicked
-    });
+    if (openSignupBtn && signupPopup) {
+        openSignupBtn.addEventListener('click', function () {
+            signupPopup.style.display = 'flex';
+        });
 
-    // Function to close popup on close button click
-    closeSignupBtn.addEventListener('click', function() {
-        signupPopup.style.display = 'none';  // Hide popup when close button is clicked
-    });
-
-    // Close popup if user clicks outside of the popup content
-    window.addEventListener('click', function(event) {
-        if (event.target == signupPopup) {
-            signupPopup.style.display = 'none';  // Hide popup when clicking outside the content
+        if (closeSignupBtn) {
+            closeSignupBtn.addEventListener('click', function () {
+                signupPopup.style.display = 'none';
+            });
+        } else {
+            console.error("Element with class 'signup-close-btn' not found.");
         }
-    });
+
+        window.addEventListener('click', function (event) {
+            if (event.target === signupPopup) {
+                signupPopup.style.display = 'none';
+            }
+        });
+    } else {
+        console.error("Elements 'openSignupBtn' or 'signupPopup' not found.");
+    }
 });
 
+// Navigation functions
 function goHome() {
     window.location.href = 'index.html';
 }
@@ -48,89 +53,127 @@ function postReview() {
 
 // Function to open the search pop-up
 function openSearch() {
-    document.getElementById('searchPopup').style.display = 'flex';
+    const searchPopup = document.getElementById('searchPopup');
+    if (searchPopup) {
+        searchPopup.style.display = 'flex';
+    } else {
+        console.warn("Element with ID 'searchPopup' not found.");
+    }
 }
 
 // Function to close the search pop-up
 function closeSearch() {
-    document.getElementById('searchPopup').style.display = 'none';
+    const searchPopup = document.getElementById('searchPopup');
+    if (searchPopup) {
+        searchPopup.style.display = 'none';
+    } else {
+        console.warn("Element with ID 'searchPopup' not found.");
+    }
 }
 
-//for POST requests on writing reviews
-document.getElementById('reviewForm').addEventListener('submit', function(event) {
-    event.preventDefault();
+// Handle Review Form Submission
+const reviewForm = document.getElementById('reviewForm');
+if (reviewForm) {
+    reviewForm.addEventListener('submit', function (event) {
+        event.preventDefault();
 
-    const productName = document.getElementById('productName').value;
-    const review = document.getElementById('review').value;
+        const productName = document.getElementById('productName').value;
+        const review = document.getElementById('review').value;
 
-    fetch('http://localhost:8080/addReview', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: `productName=${encodeURIComponent(productName)}&review=${encodeURIComponent(review)}`
-    })
-    .then(response => response.text())
-    .then(data => {
-        document.getElementById('reviewResponse').innerText = data;
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        document.getElementById('reviewResponse').innerText = "Failed to submit review.";
+        fetch('http://localhost:8080/addReview', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `productName=${encodeURIComponent(productName)}&review=${encodeURIComponent(review)}`,
+        })
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('reviewResponse').innerText = data;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('reviewResponse').innerText = "Failed to submit review.";
+            });
     });
-});
+} else {
+    console.warn("Element with ID 'reviewForm' not found.");
+}
 
+// Handle Search Query Submission
+function key_up(event) {
+    event = event || window.event;
+    if (event.keyCode === 13) { // Check if Enter key is pressed
+        submitSearch();
+    }
+}
 
-// Function to submit the search query and navigate to the search results page
 function submitSearch() {
-    var query = document.getElementById('searchInput').value;
+    const searchInput = document.getElementById('navbarSearchInput') || document.getElementById('popupSearchInput');
 
-    // Store the search query in localStorage to use on the search results page
+    if (!searchInput || !searchInput.value.trim()) {
+        alert("Please enter a search term.");
+        return;
+    }
+
+    const query = searchInput.value.trim();
+    console.log(`Submitting search for: ${query}`); // Debug log
+
+    // Store the search query in localStorage
     localStorage.setItem('searchQuery', query);
 
-    // Fetch request for search results from the backend (search by product name)
-    fetch(`http://localhost:8080/data?query=${query}`)  // Call with product name
-        .then(response => response.json())
-        .then(data => {
-            console.log('Search results:', data);  // Log or handle the search results here
-            document.getElementById('response').innerText = JSON.stringify(data);
+    fetch(`http://localhost:8080/data?query=${encodeURIComponent(query)}`)
+        .then(response => {
+            if (!response.ok) {
+                console.error("Backend responded with an error:", response.statusText);
+                throw new Error("Network response was not ok");
+            }
+            return response.json();
         })
-        .catch(error => console.error('Error:', error));
-
-    // Navigate to the search.html page
-    window.location.href = 'search.html';
+        .then(data => {
+            console.log('Fetched search results from backend:', data); // Debug log
+            localStorage.setItem('searchResults', JSON.stringify(data)); // Optional if needed
+            window.location.href = 'search.html';
+        })
+        .catch(error => {
+            console.error("Error during fetch:", error);
+            alert("Failed to fetch search results.");
+        });
 }
 
-// Function to display the search query in search.html
-window.onload = function() {
-    var productName = localStorage.getItem('searchQuery');  // Retrieve product name
+// Display Search Results in search.html
+document.addEventListener('DOMContentLoaded', function () {
+    const productName = localStorage.getItem('searchQuery');  // Retrieve product name
+    console.log(`Loading results for query: ${productName}`); // Debug log
+
+    const searchResultsDiv = document.getElementById('searchResults');
+    if (!searchResultsDiv) {
+        console.error("Element with ID 'searchResults' not found.");
+        return;
+    }
+
     if (productName) {
-        // Make a fetch request to get search results based on the product name
-        fetch(`http://localhost:8080/data?query=${productName}`)
+        fetch(`http://localhost:8080/data?query=${encodeURIComponent(productName)}`)
             .then(response => response.json())
             .then(data => {
-                console.log('Fetched search data:', data);
-                const searchResultsDiv = document.getElementById('searchResults');
+                console.log('Fetched search data:', data); // Debug log
 
-                // Check if we got any results
                 if (data.length > 0) {
-                    // Iterate through the results and display each review
                     data.forEach(review => {
                         const resultRow = document.createElement('div');
                         resultRow.classList.add('result-row');
-                        resultRow.innerText = review;  // Each review is displayed as a row
+                        resultRow.innerText = review;
                         searchResultsDiv.appendChild(resultRow);
                     });
                 } else {
-                    // If no results are found, display a message
                     searchResultsDiv.innerText = "No reviews found for this product.";
                 }
             })
             .catch(error => {
                 console.error('Error fetching search results:', error);
-                document.getElementById('searchResults').innerText = "Error fetching search results.";
+                searchResultsDiv.innerText = "Error fetching search results.";
             });
     } else {
-        document.getElementById('searchResults').innerText = "No search query provided.";
+        searchResultsDiv.innerText = "No search query provided.";
     }
-};
+});
